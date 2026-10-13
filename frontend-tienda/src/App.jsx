@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = 'https://tienda-camisetas-retro.onrender.com/api';
 
 function App() {
   // Estados para listas
