@@ -192,7 +192,7 @@ export default function App() {
                     >
                       <option value="">-- Elige una camiseta --</option>
                       {camisetas.map(c => (
-                        <option key={c.id} value={c.id}>{c.nombre} - ${c.precio}</option>
+                        <option key={c.id} value={c.id}>{c.equipo || c.nombre || "Camiseta Retro"} - ${c.precio} </option>
                       ))}
                     </select>
                   </div>
