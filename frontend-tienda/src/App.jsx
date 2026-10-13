@@ -234,16 +234,24 @@ export default function App() {
                 <p style={{ color: '#64748b' }}>No hay pedidos registrados todavía.</p>
               ) : (
                 <ul style={{ listStyle: 'none', padding: 0 }}>
-                  {pedidos.map(p => (
-                    <li key={p.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong>Pedido #{p.id}</strong> — Cliente ID: {p.cliente_id} | Camiseta ID: {p.camiseta_id} | Cantidad: {p.cantidad}
-                      </div>
-                      <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                        Fecha: {p.fecha ? p.fecha.split('T')[0] : 'N/A'}
-                      </div>
-                    </li>
-                  ))}
+                  {pedidos.map(p => {
+              const clienteEncontrado = clientes.find(c => c.id == p.cliente_id);
+              const camisetaEncontrada = camisetas.find(c => c.id == p.camiseta_id);
+
+              return (
+                <li key={p.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong>Pedido #{p.id}</strong> — 
+                    👤 <strong>{clienteEncontrado ? clienteEncontrado.nombre : `Cliente ID: ${p.cliente_id}`}</strong> | 
+                    👕 <strong>{camisetaEncontrada ? (camisetaEncontrada.equipo || camisetaEncontrada.nombre) : `Camiseta ID: ${p.camiseta_id}`}</strong> | 
+                    Cantidad: {p.cantidad}
+                  </div>
+                  <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                    Fecha: {p.fecha ? p.fecha.split('T')[0] : 'N/A'}
+                  </div>
+                </li>
+              );
+            })}
                 </ul>
               )}
             </section>
