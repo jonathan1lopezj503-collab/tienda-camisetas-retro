@@ -23,14 +23,18 @@ export default function App() {
   const [pedidos, setPedidos] = useState([]);
 
   // Estados de interfaz y flujo
-  const [paso, setPaso] = useState('bienvenida'); // 'bienvenida', 'login', 'tienda'
+  const [paso, setPaso] = useState('bienvenida'); // 'bienvenida', 'tienda'
+  const [mostrarModalLogin, setMostrarModalLogin] = useState(false);
   const [clienteSeleccionado, setClienteSeleccionado] = useState('');
   const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', email: '' });
   const [nuevoPedido, setNuevoPedido] = useState({ camiseta_id: '', cantidad: 1, fecha: '' });
   const [vistaHistorial, setVistaHistorial] = useState(false);
 
   useEffect(() => {
-    // Eliminar márgenes blancos de la pantalla completa
+    // Eliminar márgenes blancos por completo
+    document.documentElement.style.margin = '0';
+    document.documentElement.style.padding = '0';
+    document.documentElement.style.backgroundColor = '#0f172a';
     document.body.style.margin = '0';
     document.body.style.padding = '0';
     document.body.style.backgroundColor = '#0f172a';
@@ -47,6 +51,9 @@ export default function App() {
       setClientes(resClientes.data);
       setCamisetas(resCamisetas.data);
       setPedidos(resPedidos.data);
+      if (resClientes.data.length > 0 && !clienteSeleccionado) {
+        setClienteSeleccionado(resClientes.data[0].id);
+      }
     } catch (error) {
       console.error("Error al cargar los datos:", error);
     }
@@ -58,7 +65,7 @@ export default function App() {
       alert('Por favor selecciona un usuario existente.');
       return;
     }
-    setPaso('tienda');
+    setMostrarModalLogin(false);
   };
 
   const handleCrearCliente = async (e) => {
@@ -70,7 +77,7 @@ export default function App() {
       await cargarDatos();
       if (res.data.id) {
         setClienteSeleccionado(res.data.id);
-        setPaso('tienda');
+        setMostrarModalLogin(false);
       }
     } catch (error) {
       console.error(error);
@@ -82,7 +89,7 @@ export default function App() {
     e.preventDefault();
     try {
       await axios.post(`${API_URL}/pedidos`, {
-        cliente_id: clienteSeleccionado,
+        cliente_id: clienteSeleccionado || (clientes[0] ? clientes[0].id : 1),
         camiseta_id: nuevoPedido.camiseta_id,
         cantidad: nuevoPedido.cantidad,
         fecha: nuevoPedido.fecha
@@ -95,7 +102,6 @@ export default function App() {
     }
   };
 
-  // Asigna la imagen según la base de datos o buscando coincidencia en el diccionario
   const obtenerImagenCamiseta = (camiseta) => {
     if (camiseta.imagen) return camiseta.imagen;
     const nombreEquipo = camiseta.equipo || camiseta.nombre || '';
@@ -108,7 +114,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', width: '100vw', color: '#f8fafc', padding: '30px 20px', boxSizing: 'border-box', fontFamily: "'Segoe UI', Roboto, sans-serif", overflowX: 'hidden' }}>
+    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', width: '100%', color: '#f8fafc', padding: '20px', boxSizing: 'border-box', fontFamily: "'Segoe UI', Roboto, sans-serif" }}>
       
       {/* PANTALLA 1: BIENVENIDA */}
       {paso === 'bienvenida' && (
@@ -119,7 +125,7 @@ export default function App() {
             Bienvenido a la colección exclusiva de camisetas de fútbol retro.
           </p>
           <button 
-            onClick={() => setPaso('login')}
+            onClick={() => setPaso('tienda')}
             style={{ width: '100%', background: '#2563eb', color: '#ffffff', border: 'none', padding: '14px 20px', borderRadius: '10px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 14px 0 rgba(37, 99, 235, 0.39)' }}
           >
             Ingresar a la Tienda
@@ -127,67 +133,11 @@ export default function App() {
         </div>
       )}
 
-      {/* PANTALLA 2: REGISTRO / SELECCIÓN DE USUARIO */}
-      {paso === 'login' && (
-        <div style={{ maxWidth: '500px', margin: '60px auto', background: '#1e293b', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid #334155' }}>
-          <h2 style={{ textAlign: 'center', fontSize: '1.5rem', color: '#ffffff', marginBottom: '20px' }}>Identifícate o Regístrate</h2>
-
-          <form onSubmit={handleEntrarConCliente} style={{ marginBottom: '25px' }}>
-            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>Seleccionar Usuario:</label>
-            <select 
-              value={clienteSeleccionado} 
-              onChange={(e) => setClienteSeleccionado(e.target.value)}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #475569', marginBottom: '12px', backgroundColor: '#0f172a', color: '#f8fafc' }}
-            >
-              <option value="">-- Elige tu usuario --</option>
-              {clientes.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre} ({c.email})</option>
-              ))}
-            </select>
-            <button type="submit" style={{ width: '100%', background: '#2563eb', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-              Continuar a la Tienda
-            </button>
-          </form>
-
-          <hr style={{ border: '0', borderTop: '1px solid #334155', margin: '20px 0' }} />
-
-          <form onSubmit={handleCrearCliente} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ fontWeight: '600', color: '#cbd5e1' }}>¿Eres nuevo? Regístrate aquí:</label>
-            <input 
-              type="text" 
-              placeholder="Nombre Completo" 
-              value={nuevoCliente.nombre} 
-              onChange={e => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
-              required
-              style={{ padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
-            />
-            <input 
-              type="email" 
-              placeholder="Correo Electrónico" 
-              value={nuevoCliente.email} 
-              onChange={e => setNuevoCliente({...nuevoCliente, email: e.target.value})}
-              required
-              style={{ padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
-            />
-            <button type="submit" style={{ background: '#16a34a', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Crear Cuenta y Entrar
-            </button>
-          </form>
-          
-          <button 
-            onClick={() => setPaso('bienvenida')}
-            style={{ width: '100%', background: 'transparent', color: '#94a3b8', border: 'none', marginTop: '15px', cursor: 'pointer', textDecoration: 'underline' }}
-          >
-            Regresar
-          </button>
-        </div>
-      )}
-
-      {/* PANTALLA 3: DASHBOARD TIENDA */}
+      {/* PANTALLA 2: DASHBOARD Y CATÁLOGO DE LA TIENDA */}
       {paso === 'tienda' && (
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
           
-          {/* BARRA SUPERIOR */}
+          {/* BARRA SUPERIOR CON BOTONES ALINEADOS A LA DERECHA */}
           <nav style={{ 
             display: 'flex', 
             justify: 'space-between', 
@@ -201,20 +151,22 @@ export default function App() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '1.5rem' }}>⚽</span>
-              <div>
-                <h1 style={{ fontSize: '1.4rem', color: '#ffffff', margin: 0, fontWeight: '700' }}>TIENDA DE CAMISETAS RETRO</h1>
-                <span style={{ fontSize: '0.85rem', color: '#93c5fd' }}>
-                  Cliente: {clientes.find(c => c.id == clienteSeleccionado)?.nombre || `ID ${clienteSeleccionado}`}
-                </span>
-              </div>
+              <h1 style={{ fontSize: '1.4rem', color: '#ffffff', margin: 0, fontWeight: '700' }}>TIENDA DE CAMISETAS RETRO</h1>
             </div>
             
-            <div style={{ display: 'flex', gap: '10px' }}>
+            {/* BOTONES ALINEADOS TOTALMENTE A LA ESQUINA DERECHA */}
+            <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
               <button 
                 onClick={() => setVistaHistorial(!vistaHistorial)}
                 style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 {vistaHistorial ? 'Ver Catálogo' : 'Ver Historial'}
+              </button>
+              <button 
+                onClick={() => setMostrarModalLogin(true)}
+                style={{ background: '#16a34a', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Registrarse
               </button>
               <button 
                 onClick={() => setPaso('bienvenida')}
@@ -331,6 +283,64 @@ export default function App() {
               )}
             </section>
           )}
+        </div>
+      )}
+
+      {/* MODAL DE REGISTRO / CAMBIO DE USUARIO */}
+      {mostrarModalLogin && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div style={{ maxWidth: '480px', width: '90%', background: '#1e293b', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid #334155' }}>
+            <h2 style={{ textAlign: 'center', fontSize: '1.5rem', color: '#ffffff', marginBottom: '20px' }}>Identifícate o Regístrate</h2>
+
+            <form onSubmit={handleEntrarConCliente} style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>Seleccionar Usuario Exisitente:</label>
+              <select 
+                value={clienteSeleccionado} 
+                onChange={(e) => setClienteSeleccionado(e.target.value)}
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #475569', marginBottom: '12px', backgroundColor: '#0f172a', color: '#f8fafc' }}
+              >
+                <option value="">-- Elige tu usuario --</option>
+                {clientes.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre} ({c.email})</option>
+                ))}
+              </select>
+              <button type="submit" style={{ width: '100%', background: '#2563eb', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                Seleccionar y Cerrar
+              </button>
+            </form>
+
+            <hr style={{ border: '0', borderTop: '1px solid #334155', margin: '20px 0' }} />
+
+            <form onSubmit={handleCrearCliente} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label style={{ fontWeight: '600', color: '#cbd5e1' }}>¿Eres nuevo? Regístrate aquí:</label>
+              <input 
+                type="text" 
+                placeholder="Nombre Completo" 
+                value={nuevoCliente.nombre} 
+                onChange={e => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
+                required
+                style={{ padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
+              />
+              <input 
+                type="email" 
+                placeholder="Correo Electrónico" 
+                value={nuevoCliente.email} 
+                onChange={e => setNuevoCliente({...nuevoCliente, email: e.target.value})}
+                required
+                style={{ padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
+              />
+              <button type="submit" style={{ background: '#16a34a', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Crear Cuenta y Entrar
+              </button>
+            </form>
+
+            <button 
+              onClick={() => setMostrarModalLogin(false)}
+              style={{ width: '100%', background: 'transparent', color: '#94a3b8', border: 'none', marginTop: '15px', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Cerrar
+            </button>
+          </div>
         </div>
       )}
 
