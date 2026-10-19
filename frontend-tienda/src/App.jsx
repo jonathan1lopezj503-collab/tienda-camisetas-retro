@@ -3,18 +3,37 @@ import axios from 'axios';
 
 const API_URL = 'https://tienda-camisetas-retro.onrender.com/api';
 
+// Diccionario de imágenes mapeadas por equipo
+const imagenesCamisetas = {
+  'Francia': 'https://futbolcamis.es/wp-content/uploads/2023/10/6f828320-scaled.jpeg',
+  'Colo-Colo': 'https://acdn.mitiendanube.com/stores/002/011/196/products/camisa-retro-colo-colo-home-1995-41-af4a88648992aaaaa216505857202673-640-0.jpg',
+  'Lazio': 'https://matchdaycr.com/cdn/shop/files/IMG-9749.jpg?v=1752506872&width=1445',
+  'Leverkusen': 'https://static.wixstatic.com/media/b6658d_9ef0f61cffe144128785a46bd665d1d7~mv2.jpg/v1/fill/w_2000,h_3000,al_c,q_90,enc_avif,quality_auto/b6658d_9ef0f61cffe144128785a46bd665d1d7~mv2.jpg',
+  'Liverpool': 'https://www.sportskompany.com/wp-content/uploads/2025/08/0da670ca.jpg',
+  'Tottenham': 'https://static.wixstatic.com/media/435082_0b82f54957fa4938b4444fed022d7482~mv2.jpeg/v1/fill/w_3456,h_3456,al_c,q_90,enc_avif,quality_auto/435082_0b82f54957fa4938b4444fed022d7482~mv2.jpeg',
+  'Barcelona': 'https://futbolcamis.es/wp-content/uploads/2023/09/32543de8-scaled.jpeg',
+  'Argentina': 'https://lojamantodeclasse.com/cdn/shop/files/12_5161fe05-7b25-4597-a95c-ee6d675d777a.png?v=1760542668&width=1090',
+  'Milan': 'https://futbolcamis.es/wp-content/uploads/2023/09/811b2233.jpeg',
+  'Real Madrid': 'https://www.myretrojersey.com/wp-content/uploads/2022/09/a_8_c7bd1ef5-84a0-425f-982d-437bef41565e-600x600.jpg'
+};
+
 export default function App() {
   const [clientes, setClientes] = useState([]);
   const [camisetas, setCamisetas] = useState([]);
   const [pedidos, setPedidos] = useState([]);
 
-  // Estados de interfaz
-  const [usuarioLogueado, setUsuarioLogueado] = useState(false);
+  // Estados de interfaz y flujo
+  const [paso, setPaso] = useState('bienvenida'); // 'bienvenida', 'login', 'tienda'
   const [clienteSeleccionado, setClienteSeleccionado] = useState('');
+  const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', email: '' });
   const [nuevoPedido, setNuevoPedido] = useState({ camiseta_id: '', cantidad: 1, fecha: '' });
   const [vistaHistorial, setVistaHistorial] = useState(false);
 
   useEffect(() => {
+    // Eliminar márgenes blancos de la pantalla completa
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.backgroundColor = '#0f172a';
     cargarDatos();
   }, []);
 
@@ -33,23 +52,37 @@ export default function App() {
     }
   };
 
-  const handleIngresar = () => {
-    setUsuarioLogueado(true);
-    // Si hay clientes cargados, selecciona el primero por defecto
-    if (clientes.length > 0 && !clienteSeleccionado) {
-      setClienteSeleccionado(clientes[0].id);
+  const handleEntrarConCliente = (e) => {
+    e.preventDefault();
+    if (!clienteSeleccionado) {
+      alert('Por favor selecciona un usuario existente.');
+      return;
+    }
+    setPaso('tienda');
+  };
+
+  const handleCrearCliente = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.post(`${API_URL}/clientes`, nuevoCliente);
+      alert('¡Cliente registrado con éxito!');
+      setNuevoCliente({ nombre: '', email: '' });
+      await cargarDatos();
+      if (res.data.id) {
+        setClienteSeleccionado(res.data.id);
+        setPaso('tienda');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error detallado: ' + (error.response?.data?.error || error.message));
     }
   };
 
   const handleCrearPedido = async (e) => {
     e.preventDefault();
-    if (!clienteSeleccionado && clientes.length > 0) {
-      setClienteSeleccionado(clientes[0].id);
-    }
-
     try {
       await axios.post(`${API_URL}/pedidos`, {
-        cliente_id: clienteSeleccionado || (clientes[0] ? clientes[0].id : 1),
+        cliente_id: clienteSeleccionado,
         camiseta_id: nuevoPedido.camiseta_id,
         cantidad: nuevoPedido.cantidad,
         fecha: nuevoPedido.fecha
@@ -58,58 +91,103 @@ export default function App() {
       setNuevoPedido({ camiseta_id: '', cantidad: 1, fecha: '' });
       cargarDatos();
     } catch (error) {
-      console.error(error);
-      alert('Error al realizar el pedido: ' + (error.response?.data?.error || error.message));
+      alert('Error al realizar el pedido');
     }
   };
 
+  // Asigna la imagen según la base de datos o buscando coincidencia en el diccionario
+  const obtenerImagenCamiseta = (camiseta) => {
+    if (camiseta.imagen) return camiseta.imagen;
+    const nombreEquipo = camiseta.equipo || camiseta.nombre || '';
+    for (const key in imagenesCamisetas) {
+      if (nombreEquipo.toLowerCase().includes(key.toLowerCase())) {
+        return imagenesCamisetas[key];
+      }
+    }
+    return "https://images.unsplash.com/photo-1518063319789-7217d695c5d0?w=300&auto=format&fit=crop&q=80";
+  };
+
   return (
-    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', padding: '20px', fontFamily: "'Segoe UI', Roboto, sans-serif" }}>
+    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', width: '100vw', color: '#f8fafc', padding: '30px 20px', boxSizing: 'border-box', fontFamily: "'Segoe UI', Roboto, sans-serif", overflowX: 'hidden' }}>
       
-      {/* PANTALLA 1: BIENVENIDA SIMPLIFICADA */}
-      {!usuarioLogueado ? (
-        <div style={{ 
-          maxWidth: '480px', 
-          margin: '100px auto', 
-          background: '#1e293b', 
-          padding: '40px 30px', 
-          borderRadius: '16px', 
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)', 
-          textAlign: 'center',
-          border: '1px solid #334155'
-        }}>
+      {/* PANTALLA 1: BIENVENIDA */}
+      {paso === 'bienvenida' && (
+        <div style={{ maxWidth: '480px', margin: '100px auto', background: '#1e293b', padding: '40px 30px', borderRadius: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', textAlign: 'center', border: '1px solid #334155' }}>
           <div style={{ fontSize: '3.5rem', marginBottom: '15px' }}>⚽</div>
-          <h1 style={{ fontSize: '2rem', color: '#ffffff', margin: '0 0 10px 0', fontWeight: '700' }}>
-            TIENDA RETRO
-          </h1>
+          <h1 style={{ fontSize: '2rem', color: '#ffffff', margin: '0 0 10px 0', fontWeight: '700' }}>TIENDA RETRO</h1>
           <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '30px', lineHeight: '1.5' }}>
             Bienvenido a la colección exclusiva de camisetas de fútbol retro.
           </p>
-
           <button 
-            onClick={handleIngresar}
-            style={{ 
-              width: '100%', 
-              background: '#2563eb', 
-              color: '#ffffff', 
-              border: 'none', 
-              padding: '14px 20px', 
-              borderRadius: '10px', 
-              fontSize: '1.1rem', 
-              fontWeight: 'bold', 
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px 0 rgba(37, 99, 235, 0.39)',
-              transition: 'transform 0.1s, background-color 0.2s'
-            }}
+            onClick={() => setPaso('login')}
+            style={{ width: '100%', background: '#2563eb', color: '#ffffff', border: 'none', padding: '14px 20px', borderRadius: '10px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 14px 0 rgba(37, 99, 235, 0.39)' }}
           >
-            Ingresar a la Tienda 🚀
+            Ingresar a la Tienda
           </button>
         </div>
-      ) : (
-        /* PANTALLA 2: DASHBOARD DE LA TIENDA */
+      )}
+
+      {/* PANTALLA 2: REGISTRO / SELECCIÓN DE USUARIO */}
+      {paso === 'login' && (
+        <div style={{ maxWidth: '500px', margin: '60px auto', background: '#1e293b', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid #334155' }}>
+          <h2 style={{ textAlign: 'center', fontSize: '1.5rem', color: '#ffffff', marginBottom: '20px' }}>Identifícate o Regístrate</h2>
+
+          <form onSubmit={handleEntrarConCliente} style={{ marginBottom: '25px' }}>
+            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>Seleccionar Usuario:</label>
+            <select 
+              value={clienteSeleccionado} 
+              onChange={(e) => setClienteSeleccionado(e.target.value)}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #475569', marginBottom: '12px', backgroundColor: '#0f172a', color: '#f8fafc' }}
+            >
+              <option value="">-- Elige tu usuario --</option>
+              {clientes.map(c => (
+                <option key={c.id} value={c.id}>{c.nombre} ({c.email})</option>
+              ))}
+            </select>
+            <button type="submit" style={{ width: '100%', background: '#2563eb', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+              Continuar a la Tienda
+            </button>
+          </form>
+
+          <hr style={{ border: '0', borderTop: '1px solid #334155', margin: '20px 0' }} />
+
+          <form onSubmit={handleCrearCliente} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <label style={{ fontWeight: '600', color: '#cbd5e1' }}>¿Eres nuevo? Regístrate aquí:</label>
+            <input 
+              type="text" 
+              placeholder="Nombre Completo" 
+              value={nuevoCliente.nombre} 
+              onChange={e => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
+              required
+              style={{ padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
+            />
+            <input 
+              type="email" 
+              placeholder="Correo Electrónico" 
+              value={nuevoCliente.email} 
+              onChange={e => setNuevoCliente({...nuevoCliente, email: e.target.value})}
+              required
+              style={{ padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
+            />
+            <button type="submit" style={{ background: '#16a34a', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Crear Cuenta y Entrar
+            </button>
+          </form>
+          
+          <button 
+            onClick={() => setPaso('bienvenida')}
+            style={{ width: '100%', background: 'transparent', color: '#94a3b8', border: 'none', marginTop: '15px', cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            Regresar
+          </button>
+        </div>
+      )}
+
+      {/* PANTALLA 3: DASHBOARD TIENDA */}
+      {paso === 'tienda' && (
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           
-          {/* BARRA DE NAVEGACIÓN */}
+          {/* BARRA SUPERIOR */}
           <nav style={{ 
             display: 'flex', 
             justify: 'space-between', 
@@ -121,21 +199,26 @@ export default function App() {
             border: '1px solid #334155',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
           }}>
-            <div>
-              <h1 style={{ fontSize: '1.5rem', color: '#ffffff', margin: 0, fontWeight: '700' }}>
-                ⚽ Tienda de Camisetas Retro
-              </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.5rem' }}>⚽</span>
+              <div>
+                <h1 style={{ fontSize: '1.4rem', color: '#ffffff', margin: 0, fontWeight: '700' }}>TIENDA DE CAMISETAS RETRO</h1>
+                <span style={{ fontSize: '0.85rem', color: '#93c5fd' }}>
+                  Cliente: {clientes.find(c => c.id == clienteSeleccionado)?.nombre || `ID ${clienteSeleccionado}`}
+                </span>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
               <button 
                 onClick={() => setVistaHistorial(!vistaHistorial)}
-                style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
-                {vistaHistorial ? '🛍️ Ver Catálogo' : '📋 Ver Historial'}
+                {vistaHistorial ? 'Ver Catálogo' : 'Ver Historial'}
               </button>
               <button 
-                onClick={() => setUsuarioLogueado(false)}
-                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={() => setPaso('bienvenida')}
+                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 Salir
               </button>
@@ -144,7 +227,7 @@ export default function App() {
 
           {!vistaHistorial ? (
             <>
-              {/* SECCIÓN CATÁLOGO */}
+              {/* CATÁLOGO DE CAMISETAS */}
               <section style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155', marginBottom: '30px' }}>
                 <h2 style={{ color: '#60a5fa', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px', fontSize: '1.3rem' }}>
                   Catálogo de Camisetas Retro
@@ -153,8 +236,8 @@ export default function App() {
                   {camisetas.map(c => (
                     <div key={c.id} style={{ border: '1px solid #334155', borderRadius: '10px', padding: '15px', background: '#0f172a', textAlign: 'center' }}>
                       <img 
-                        src={c.imagen || "https://images.unsplash.com/photo-1518063319789-7217d695c5d0?w=300&auto=format&fit=crop&q=80"} 
-                        alt="Camiseta" 
+                        src={obtenerImagenCamiseta(c)} 
+                        alt={c.equipo || c.nombre} 
                         style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }}
                       />
                       <h3 style={{ fontSize: '1rem', color: '#f8fafc', marginBottom: '6px' }}>{c.equipo || c.nombre}</h3>
@@ -164,7 +247,7 @@ export default function App() {
                 </div>
               </section>
 
-              {/* SECCIÓN PEDIDO */}
+              {/* REALIZAR PEDIDO */}
               <section style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155' }}>
                 <h2 style={{ color: '#60a5fa', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px', fontSize: '1.3rem' }}>
                   Realizar Pedido
@@ -217,10 +300,10 @@ export default function App() {
               </section>
             </>
           ) : (
-            /* VISTA HISTORIAL */
+            /* VISTA DE HISTORIAL */
             <section style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155' }}>
               <h2 style={{ color: '#ffffff', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px', fontSize: '1.3rem' }}>
-                📋 Historial Completo de Ventas y Pedidos
+                Historial Completo de Ventas y Pedidos
               </h2>
               {pedidos.length === 0 ? (
                 <p style={{ color: '#94a3b8' }}>No hay pedidos registrados todavía.</p>
@@ -234,8 +317,8 @@ export default function App() {
                       <li key={p.id} style={{ background: '#0f172a', border: '1px solid #334155', padding: '16px', borderRadius: '8px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <strong style={{ color: '#60a5fa' }}>Pedido #{p.id}</strong> — 
-                          👤 <strong style={{ color: '#f8fafc' }}>{clienteEncontrado ? clienteEncontrado.nombre : `Cliente ID: ${p.cliente_id}`}</strong> | 
-                          👕 <strong style={{ color: '#f8fafc' }}>{camisetaEncontrada ? (camisetaEncontrada.equipo || camisetaEncontrada.nombre) : `Camiseta ID: ${p.camiseta_id}`}</strong> | 
+                          <strong style={{ color: '#f8fafc' }}> {clienteEncontrado ? clienteEncontrado.nombre : `Cliente ID: ${p.cliente_id}`}</strong> | 
+                          <strong style={{ color: '#f8fafc' }}> {camisetaEncontrada ? (camisetaEncontrada.equipo || camisetaEncontrada.nombre) : `Camiseta ID: ${p.camiseta_id}`}</strong> | 
                           <span style={{ color: '#cbd5e1' }}> Cantidad: {p.cantidad}</span>
                         </div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
