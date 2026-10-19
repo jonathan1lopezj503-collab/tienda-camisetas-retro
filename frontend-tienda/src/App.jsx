@@ -8,12 +8,10 @@ export default function App() {
   const [camisetas, setCamisetas] = useState([]);
   const [pedidos, setPedidos] = useState([]);
 
-  // Estados de sesión y formularios
-  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  // Estados de interfaz
   const [usuarioLogueado, setUsuarioLogueado] = useState(false);
-  const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', email: '' });
+  const [clienteSeleccionado, setClienteSeleccionado] = useState('');
   const [nuevoPedido, setNuevoPedido] = useState({ camiseta_id: '', cantidad: 1, fecha: '' });
-  
   const [vistaHistorial, setVistaHistorial] = useState(false);
 
   useEffect(() => {
@@ -35,37 +33,23 @@ export default function App() {
     }
   };
 
-  const handleCrearCliente = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post(`${API_URL}/clientes`, nuevoCliente);
-      alert('¡Cliente registrado con éxito!');
-      setNuevoCliente({ nombre: '', email: '' });
-      await cargarDatos();
-      if (res.data.id) {
-        setClienteSeleccionado(res.data.id);
-        setUsuarioLogueado(true);
-      }
-    } catch (error) {
-      console.error(error);
-      alert('Error detallado: ' + (error.response?.data?.error || error.message));
-    }
-  };
-
-  const handleEntrarTienda = (e) => {
-    e.preventDefault();
-    if (!clienteSeleccionado) {
-      alert('Por favor selecciona un usuario existente.');
-      return;
-    }
+  const handleIngresar = () => {
     setUsuarioLogueado(true);
+    // Si hay clientes cargados, selecciona el primero por defecto
+    if (clientes.length > 0 && !clienteSeleccionado) {
+      setClienteSeleccionado(clientes[0].id);
+    }
   };
 
   const handleCrearPedido = async (e) => {
     e.preventDefault();
+    if (!clienteSeleccionado && clientes.length > 0) {
+      setClienteSeleccionado(clientes[0].id);
+    }
+
     try {
       await axios.post(`${API_URL}/pedidos`, {
-        cliente_id: clienteSeleccionado,
+        cliente_id: clienteSeleccionado || (clientes[0] ? clientes[0].id : 1),
         camiseta_id: nuevoPedido.camiseta_id,
         cantidad: nuevoPedido.cantidad,
         fecha: nuevoPedido.fecha
@@ -74,118 +58,125 @@ export default function App() {
       setNuevoPedido({ camiseta_id: '', cantidad: 1, fecha: '' });
       cargarDatos();
     } catch (error) {
-      alert('Error al realizar el pedido');
+      console.error(error);
+      alert('Error al realizar el pedido: ' + (error.response?.data?.error || error.message));
     }
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px', fontFamily: 'Segoe UI, sans-serif', backgroundColor: '#e2e8f0', minHeight: '100vh' }}>
+    <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', color: '#f8fafc', padding: '20px', fontFamily: "'Segoe UI', Roboto, sans-serif" }}>
       
-      {/* PANTALLA 1: INICIO DE SESIÓN / REGISTRO */}
+      {/* PANTALLA 1: BIENVENIDA SIMPLIFICADA */}
       {!usuarioLogueado ? (
-        <div style={{ maxWidth: '500px', margin: '80px auto', background: '#ffffff', padding: '30px', borderRadius: '14px', boxShadow: '0 10px 25px rgba(15, 23, 42, 0.15)', borderTop: '6px solid #1e3a8a' }}>
-          <h1 style={{ textAlign: 'center', fontSize: '1.8rem', color: '#0f172a', marginBottom: '10px' }}>⚽ Tienda Retro</h1>
-          <p style={{ textAlign: 'center', color: '#475569', marginBottom: '25px' }}>Identifícate para entrar a la tienda</p>
+        <div style={{ 
+          maxWidth: '480px', 
+          margin: '100px auto', 
+          background: '#1e293b', 
+          padding: '40px 30px', 
+          borderRadius: '16px', 
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)', 
+          textAlign: 'center',
+          border: '1px solid #334155'
+        }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: '15px' }}>⚽</div>
+          <h1 style={{ fontSize: '2rem', color: '#ffffff', margin: '0 0 10px 0', fontWeight: '700' }}>
+            TIENDA RETRO
+          </h1>
+          <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '30px', lineHeight: '1.5' }}>
+            Bienvenido a la colección exclusiva de camisetas de fútbol retro.
+          </p>
 
-          <form onSubmit={handleEntrarTienda} style={{ marginBottom: '25px' }}>
-            <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#1e293b' }}>Seleccionar Usuario:</label>
-            <select 
-              value={clienteSeleccionado || ''} 
-              onChange={(e) => setClienteSeleccionado(e.target.value)}
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #94a3b8', marginBottom: '12px', backgroundColor: '#f8fafc' }}
-            >
-              <option value="">-- Elige tu usuario --</option>
-              {clientes.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre} ({c.email})</option>
-              ))}
-            </select>
-            <button type="submit" style={{ width: '100%', background: '#1e3a8a', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}>
-              Entrar a la Tienda
-            </button>
-          </form>
-
-          <hr style={{ border: '0', borderTop: '1px solid #cbd5e1', margin: '25px 0' }} />
-
-          <form onSubmit={handleCrearCliente} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <label style={{ fontWeight: '600', color: '#1e293b' }}>¿Eres nuevo? Regístrate:</label>
-            <input 
-              type="text" 
-              placeholder="Nombre Completo" 
-              value={nuevoCliente.nombre} 
-              onChange={e => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
-              required
-              style={{ padding: '11px', borderRadius: '8px', border: '1px solid #94a3b8', backgroundColor: '#f8fafc' }}
-            />
-            <input 
-              type="email" 
-              placeholder="Correo Electrónico" 
-              value={nuevoCliente.email} 
-              onChange={e => setNuevoCliente({...nuevoCliente, email: e.target.value})}
-              required
-              style={{ padding: '11px', borderRadius: '8px', border: '1px solid #94a3b8', backgroundColor: '#f8fafc' }}
-            />
-            <button type="submit" style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Crear Cuenta y Entrar
-            </button>
-          </form>
+          <button 
+            onClick={handleIngresar}
+            style={{ 
+              width: '100%', 
+              background: '#2563eb', 
+              color: '#ffffff', 
+              border: 'none', 
+              padding: '14px 20px', 
+              borderRadius: '10px', 
+              fontSize: '1.1rem', 
+              fontWeight: 'bold', 
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px 0 rgba(37, 99, 235, 0.39)',
+              transition: 'transform 0.1s, background-color 0.2s'
+            }}
+          >
+            Ingresar a la Tienda 🚀
+          </button>
         </div>
       ) : (
-        /* PANTALLA 2: LA TIENDA COMPLETA */
-        <>
-          <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', background: '#1e293b', padding: '18px 24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+        /* PANTALLA 2: DASHBOARD DE LA TIENDA */
+        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+          
+          {/* BARRA DE NAVEGACIÓN */}
+          <nav style={{ 
+            display: 'flex', 
+            justify: 'space-between', 
+            alignItems: 'center', 
+            marginBottom: '30px', 
+            background: '#1e293b', 
+            padding: '18px 24px', 
+            borderRadius: '12px', 
+            border: '1px solid #334155',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)'
+          }}>
             <div>
-              <h1 style={{ fontSize: '1.6rem', color: '#ffffff', margin: 0 }}>⚽ Tienda de Camisetas Retro</h1>
-              <span style={{ fontSize: '0.9rem', color: '#93c5fd', fontWeight: '600' }}>
-                Conectado como: {clientes.find(c => c.id == clienteSeleccionado)?.nombre}
-              </span>
+              <h1 style={{ fontSize: '1.5rem', color: '#ffffff', margin: 0, fontWeight: '700' }}>
+                ⚽ Tienda de Camisetas Retro
+              </h1>
             </div>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '12px' }}>
               <button 
                 onClick={() => setVistaHistorial(!vistaHistorial)}
-                style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 {vistaHistorial ? '🛍️ Ver Catálogo' : '📋 Ver Historial'}
               </button>
               <button 
                 onClick={() => setUsuarioLogueado(false)}
-                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
-                Cerrar Sesión
+                Salir
               </button>
             </div>
           </nav>
 
           {!vistaHistorial ? (
             <>
-              {/* Catálogo de Camisetas */}
-              <section style={{ background: '#ffffff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(15, 23, 42, 0.05)', marginBottom: '30px' }}>
-                <h2 style={{ color: '#1e3a8a', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>Catálogo de Camisetas Retro</h2>
+              {/* SECCIÓN CATÁLOGO */}
+              <section style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155', marginBottom: '30px' }}>
+                <h2 style={{ color: '#60a5fa', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px', fontSize: '1.3rem' }}>
+                  Catálogo de Camisetas Retro
+                </h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
                   {camisetas.map(c => (
-                    <div key={c.id} style={{ border: '1px solid #cbd5e1', borderRadius: '10px', padding: '15px', background: '#f8fafc', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div key={c.id} style={{ border: '1px solid #334155', borderRadius: '10px', padding: '15px', background: '#0f172a', textAlign: 'center' }}>
                       <img 
                         src={c.imagen || "https://images.unsplash.com/photo-1518063319789-7217d695c5d0?w=300&auto=format&fit=crop&q=80"} 
                         alt="Camiseta" 
-                        style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }}
+                        style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }}
                       />
-                      <h3 style={{ fontSize: '1rem', color: '#0f172a', marginBottom: '5px' }}>{c.equipo || c.nombre}</h3>
-                      <p style={{ color: '#1e3a8a', fontWeight: 'bold', fontSize: '1.1rem' }}>${c.precio}</p>
+                      <h3 style={{ fontSize: '1rem', color: '#f8fafc', marginBottom: '6px' }}>{c.equipo || c.nombre}</h3>
+                      <p style={{ color: '#34d399', fontWeight: 'bold', fontSize: '1.1rem', margin: 0 }}>${c.precio}</p>
                     </div>
                   ))}
                 </div>
               </section>
 
-              {/* Formulario de Pedido */}
-              <section style={{ background: '#ffffff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(15, 23, 42, 0.05)' }}>
-                <h2 style={{ color: '#1e3a8a', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>Realizar Pedido</h2>
+              {/* SECCIÓN PEDIDO */}
+              <section style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155' }}>
+                <h2 style={{ color: '#60a5fa', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px', fontSize: '1.3rem' }}>
+                  Realizar Pedido
+                </h2>
                 <form onSubmit={handleCrearPedido} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '15px', alignItems: 'end' }}>
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#1e293b' }}>Selecciona Camiseta:</label>
+                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#cbd5e1' }}>Selecciona Camiseta:</label>
                     <select 
                       value={nuevoPedido.camiseta_id} 
                       onChange={e => setNuevoPedido({...nuevoPedido, camiseta_id: e.target.value})}
                       required
-                      style={{ width: '100%', padding: '11px', borderRadius: '8px', border: '1px solid #94a3b8', backgroundColor: '#f8fafc' }}
+                      style={{ width: '100%', padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
                     >
                       <option value="">-- Elige una camiseta --</option>
                       {camisetas.map(c => (
@@ -197,55 +188,57 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#1e293b' }}>Cantidad:</label>
+                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#cbd5e1' }}>Cantidad:</label>
                     <input 
                       type="number" 
                       min="1" 
                       value={nuevoPedido.cantidad} 
                       onChange={e => setNuevoPedido({...nuevoPedido, cantidad: e.target.value})}
                       required
-                      style={{ width: '100%', padding: '11px', borderRadius: '8px', border: '1px solid #94a3b8', backgroundColor: '#f8fafc' }}
+                      style={{ width: '100%', padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '5px', color: '#1e293b' }}>Fecha:</label>
+                    <label style={{ display: 'block', fontWeight: '600', marginBottom: '6px', color: '#cbd5e1' }}>Fecha:</label>
                     <input 
                       type="date" 
                       value={nuevoPedido.fecha} 
                       onChange={e => setNuevoPedido({...nuevoPedido, fecha: e.target.value})}
                       required
-                      style={{ width: '100%', padding: '11px', borderRadius: '8px', border: '1px solid #94a3b8', backgroundColor: '#f8fafc' }}
+                      style={{ width: '100%', padding: '11px', borderRadius: '8px', border: '1px solid #475569', backgroundColor: '#0f172a', color: '#f8fafc' }}
                     />
                   </div>
 
-                  <button type="submit" style={{ background: '#1e3a8a', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  <button type="submit" style={{ background: '#2563eb', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
                     Confirmar Pedido
                   </button>
                 </form>
               </section>
             </>
           ) : (
-            /* Vista Historial de Compras */
-            <section style={{ background: '#ffffff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(15, 23, 42, 0.05)' }}>
-              <h2 style={{ color: '#0f172a', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>📋 Historial Completo de Ventas y Pedidos</h2>
+            /* VISTA HISTORIAL */
+            <section style={{ background: '#1e293b', padding: '24px', borderRadius: '12px', border: '1px solid #334155' }}>
+              <h2 style={{ color: '#ffffff', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '10px', fontSize: '1.3rem' }}>
+                📋 Historial Completo de Ventas y Pedidos
+              </h2>
               {pedidos.length === 0 ? (
-                <p style={{ color: '#64748b' }}>No hay pedidos registrados todavía.</p>
+                <p style={{ color: '#94a3b8' }}>No hay pedidos registrados todavía.</p>
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   {pedidos.map(p => {
                     const clienteEncontrado = clientes.find(c => c.id == p.cliente_id);
                     const camisetaEncontrada = camisetas.find(c => c.id == p.camiseta_id);
 
                     return (
-                      <li key={p.id} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '15px', borderRadius: '8px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <li key={p.id} style={{ background: '#0f172a', border: '1px solid #334155', padding: '16px', borderRadius: '8px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <strong>Pedido #{p.id}</strong> — 
-                          👤 <strong>{clienteEncontrado ? clienteEncontrado.nombre : `Cliente ID: ${p.cliente_id}`}</strong> | 
-                          👕 <strong>{camisetaEncontrada ? (camisetaEncontrada.equipo || camisetaEncontrada.nombre) : `Camiseta ID: ${p.camiseta_id}`}</strong> | 
-                          Cantidad: {p.cantidad}
+                          <strong style={{ color: '#60a5fa' }}>Pedido #{p.id}</strong> — 
+                          👤 <strong style={{ color: '#f8fafc' }}>{clienteEncontrado ? clienteEncontrado.nombre : `Cliente ID: ${p.cliente_id}`}</strong> | 
+                          👕 <strong style={{ color: '#f8fafc' }}>{camisetaEncontrada ? (camisetaEncontrada.equipo || camisetaEncontrada.nombre) : `Camiseta ID: ${p.camiseta_id}`}</strong> | 
+                          <span style={{ color: '#cbd5e1' }}> Cantidad: {p.cantidad}</span>
                         </div>
-                        <div style={{ color: '#475569', fontSize: '0.9rem' }}>
+                        <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
                           Fecha: {p.fecha ? p.fecha.split('T')[0] : 'N/A'}
                         </div>
                       </li>
@@ -255,7 +248,7 @@ export default function App() {
               )}
             </section>
           )}
-        </>
+        </div>
       )}
 
     </div>
