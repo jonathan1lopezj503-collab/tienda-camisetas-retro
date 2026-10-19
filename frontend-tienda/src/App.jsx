@@ -51,9 +51,6 @@ export default function App() {
       setClientes(resClientes.data);
       setCamisetas(resCamisetas.data);
       setPedidos(resPedidos.data);
-      if (resClientes.data.length > 0 && !clienteSeleccionado) {
-        setClienteSeleccionado(resClientes.data[0].id);
-      }
     } catch (error) {
       console.error("Error al cargar los datos:", error);
     }
@@ -87,9 +84,15 @@ export default function App() {
 
   const handleCrearPedido = async (e) => {
     e.preventDefault();
+
+    let idClienteParaPedido = clienteSeleccionado;
+    if (!idClienteParaPedido && clientes.length > 0) {
+      idClienteParaPedido = clientes[0].id;
+    }
+
     try {
       await axios.post(`${API_URL}/pedidos`, {
-        cliente_id: clienteSeleccionado || (clientes[0] ? clientes[0].id : 1),
+        cliente_id: idClienteParaPedido,
         camiseta_id: nuevoPedido.camiseta_id,
         cantidad: nuevoPedido.cantidad,
         fecha: nuevoPedido.fecha
@@ -102,6 +105,11 @@ export default function App() {
     }
   };
 
+  const handleSalir = () => {
+    setClienteSeleccionado('');
+    setPaso('bienvenida');
+  };
+
   const obtenerImagenCamiseta = (camiseta) => {
     if (camiseta.imagen) return camiseta.imagen;
     const nombreEquipo = camiseta.equipo || camiseta.nombre || '';
@@ -112,6 +120,9 @@ export default function App() {
     }
     return "https://images.unsplash.com/photo-1518063319789-7217d695c5d0?w=300&auto=format&fit=crop&q=80";
   };
+
+  // Obtener objeto del cliente activo actualmente
+  const clienteActivo = clientes.find(c => c.id == clienteSeleccionado);
 
   return (
     <div style={{ backgroundColor: '#0f172a', minHeight: '100vh', width: '100%', color: '#f8fafc', padding: '20px', boxSizing: 'border-box', fontFamily: "'Segoe UI', Roboto, sans-serif" }}>
@@ -137,7 +148,7 @@ export default function App() {
       {paso === 'tienda' && (
         <div style={{ maxWidth: '100%', width: '100%', margin: '0 auto' }}>
           
-          {/* BARRA SUPERIOR CON BOTONES ALINEADOS A LA DERECHA */}
+          {/* BARRA SUPERIOR CON NAVEGACIÓN DINÁMICA */}
           <nav style={{ 
             display: 'flex', 
             justify: 'space-between', 
@@ -154,22 +165,32 @@ export default function App() {
               <h1 style={{ fontSize: '1.4rem', color: '#ffffff', margin: 0, fontWeight: '700' }}>TIENDA DE CAMISETAS RETRO</h1>
             </div>
             
-            {/* BOTONES ALINEADOS TOTALMENTE A LA ESQUINA DERECHA */}
-            <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
+            {/* BOTONES Y ESTATUS DE USUARIO EN LA ESQUINA DERECHA */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto' }}>
+              
+              {/* Si hay un usuario seleccionado, muestra su nombre; si no, muestra el botón para registrarse/iniciar sesión */}
+              {clienteActivo ? (
+                <div style={{ background: '#0f172a', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontSize: '0.9rem', color: '#38bdf8', fontWeight: '600' }}>
+                  Conectado como: <span style={{ color: '#ffffff' }}>{clienteActivo.nombre}</span>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setMostrarModalLogin(true)}
+                  style={{ background: '#16a34a', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Registrarse / Iniciar
+                </button>
+              )}
+
               <button 
                 onClick={() => setVistaHistorial(!vistaHistorial)}
                 style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 {vistaHistorial ? 'Ver Catálogo' : 'Ver Historial'}
               </button>
+
               <button 
-                onClick={() => setMostrarModalLogin(true)}
-                style={{ background: '#16a34a', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                Registrarse
-              </button>
-              <button 
-                onClick={() => setPaso('bienvenida')}
+                onClick={handleSalir}
                 style={{ background: '#ef4444', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
               >
                 Salir
@@ -288,12 +309,12 @@ export default function App() {
 
       {/* MODAL DE REGISTRO / CAMBIO DE USUARIO */}
       {mostrarModalLogin && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ maxWidth: '480px', width: '90%', background: '#1e293b', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', border: '1px solid #334155' }}>
             <h2 style={{ textAlign: 'center', fontSize: '1.5rem', color: '#ffffff', marginBottom: '20px' }}>Identifícate o Regístrate</h2>
 
             <form onSubmit={handleEntrarConCliente} style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>Seleccionar Usuario Exisitente:</label>
+              <label style={{ display: 'block', fontWeight: '600', marginBottom: '8px', color: '#cbd5e1' }}>Seleccionar Usuario Existente:</label>
               <select 
                 value={clienteSeleccionado} 
                 onChange={(e) => setClienteSeleccionado(e.target.value)}
@@ -305,7 +326,7 @@ export default function App() {
                 ))}
               </select>
               <button type="submit" style={{ width: '100%', background: '#2563eb', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-                Seleccionar y Cerrar
+                Seleccionar y Entrar
               </button>
             </form>
 
