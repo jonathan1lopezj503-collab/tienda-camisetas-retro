@@ -202,3 +202,48 @@ li {
 .aviso-login-requerido button:hover {
   background-color: #b45309;
 }
+/* Media query para pantallas de celular */
+@media (max-width: 768px) {
+  
+  /* Ajusta el contenedor de la aplicación */
+  #root, .container {
+    padding: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ajusta el encabezado donde están el título y los 3 botones */
+  header, nav, form, .card, section {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Hace que los botones se acomoden solos sin salirse de la pantalla */
+  header div, nav div {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  header button, nav button {
+    flex: 1 1 30% !important;
+    min-width: 90px !important;
+    font-size: 0.75rem !important;
+    padding: 8px 6px !important;
+  }
+
+  /* Ajusta la tabla/formulario de 'Realizar Pedido' */
+  .form-pedido, form {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  input, select, button {
+    width: 100% !important;
+  }
+}
