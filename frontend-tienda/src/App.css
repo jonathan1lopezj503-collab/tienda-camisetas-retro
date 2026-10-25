@@ -129,3 +129,76 @@ li {
   font-weight: bold;
   font-size: 1.1rem;
 }
+/* ==========================================================
+   AJUSTES RESPONSIVOS Y VALIDACIÓN DE PEDIDOS (MÓVIL / ESCRITORIO)
+   ========================================================== */
+
+/* 1. Ajustes responsivos para pantallas pequeñas (móviles) */
+@media (max-width: 768px) {
+  /* Apila los elementos del encabezado y menú en vertical para evitar desbordes */
+  .header-container, nav {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 10px;
+  }
+
+  /* Distribuye los botones del header de forma adaptable */
+  .header-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .header-buttons button {
+    flex: 1 1 auto;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
+
+  /* Adapta la sección del formulario de pedidos para pantallas compactas */
+  .form-pedido {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .form-pedido .form-group {
+    width: 100%;
+  }
+
+  .form-pedido select,
+  .form-pedido input,
+  .form-pedido button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* 2. Estilos para el aviso de inicio de sesión requerido en el pedido */
+.aviso-login-requerido {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  color: #92400e;
+  margin-bottom: 20px;
+}
+
+.aviso-login-requerido p {
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+
+.aviso-login-requerido button {
+  background-color: #d97706;
+}
+
+.aviso-login-requerido button:hover {
+  background-color: #b45309;
+}
